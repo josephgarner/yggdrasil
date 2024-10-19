@@ -20,7 +20,7 @@ Resources:
         - AmazonS3FullAccess
         - AWSLambdaExecute
         - AWSXrayWriteOnlyAccess
-      CodeUri: src/
+      CodeUri: yggdrasil/
       PackageType: Image
       Architectures:
         - x86_64
@@ -29,7 +29,7 @@ Resources:
           Type: HttpApi
     Metadata:
       DockerTag: v1
-      DockerContext: ./
+      DockerContext: ./yggdrasil
       Dockerfile: Dockerfile
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
