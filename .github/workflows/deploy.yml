@@ -1,4 +1,4 @@
-name: Build, Package, and Deploy SAM Application with ECR
+name: Build and Deploy SAM Application with ECR
 
 on:
   push:
@@ -6,12 +6,11 @@ on:
       - main
 
 env:
-  SAM_CLI_TELEMETRY: "0" # Disable SAM CLI telemetry
+  SAM_CLI_TELEMETRY: "0"
   ECR_REPOSITORY: yggdrasil-images
-  S3_BUCKET: yggdrasilbuild # Your S3 bucket for SAM artifacts
 
 jobs:
-  build-package-deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -54,40 +53,15 @@ jobs:
             ]
           }'
       - name: Build with SAM
+        run: sam build --use-container --debug
+
+      - name: Deploy with SAM
         run: |
-          sam build --use-container --debug
-
-      - name: Package with SAM
-        run: |
-          sam package \
-            --s3-bucket $S3_BUCKET \
-            --output-template-file packaged.yaml \
-            --image-repository ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${ECR_REPOSITORY}
-
-      - name: Deploy with CloudFormation
-        run: |
-          aws cloudformation deploy \
-            --template-file packaged.yaml \
-            --stack-name yggdrasil \
-            --capabilities CAPABILITY_IAM \
-            --parameter-overrides \
-              ECRRepositoryName=$ECR_REPOSITORY
-
-      - name: Clean up old images
-        run: |
-          IMAGES_TO_KEEP=5
-          IMAGES_TO_DELETE=$(aws ecr list-images --repository-name ${ECR_REPOSITORY} --query 'imageIds[?type(imageTag)!=`string`].[imageDigest]' --output text)
-          if [ ! -z "$IMAGES_TO_DELETE" ]; then
-            echo "Deleting untagged images: $IMAGES_TO_DELETE"
-            aws ecr batch-delete-image --repository-name ${ECR_REPOSITORY} --image-ids "$IMAGES_TO_DELETE"
-          fi
-
-          IMAGES_TO_KEEP=$(aws ecr list-images --repository-name ${ECR_REPOSITORY} --query 'reverse(sort_by(imageDetails,& imagePushedAt))[:${IMAGES_TO_KEEP}].imageDigest' --output text)
-          ALL_IMAGES=$(aws ecr list-images --repository-name ${ECR_REPOSITORY} --query 'imageDetails[].imageDigest' --output text)
-
-          for digest in $ALL_IMAGES; do
-            if [[ ! $IMAGES_TO_KEEP =~ $digest ]]; then
-              echo "Deleting old image: $digest"
-              aws ecr batch-delete-image --repository-name ${ECR_REPOSITORY} --image-ids imageDigest=$digest
-            fi
-          done
+          sam deploy \
+              --no-confirm-changeset \
+              --no-fail-on-empty-changeset \
+              --stack-name yggdrasil \
+              --s3-bucket yggdrasilbuild \
+              --capabilities CAPABILITY_IAM \
+              --region ${{ secrets.AWS_REGION }} \
+              --image-repository ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/yggdrasil-images
