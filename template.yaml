@@ -15,29 +15,6 @@ Parameters:
     Description: Name of the ECR repository
 
 Resources:
-  YggdrasilECRRepository:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: !Ref ECRRepositoryName
-      LifecyclePolicy:
-        LifecyclePolicyText: |
-          {
-            "rules": [
-              {
-                "rulePriority": 1,
-                "description": "Keep last 10 images",
-                "selection": {
-                  "tagStatus": "any",
-                  "countType": "imageCountMoreThan",
-                  "countNumber": 10
-                },
-                "action": {
-                  "type": "expire"
-                }
-              }
-            ]
-          }
-
   YggdrasilFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -65,9 +42,3 @@ Outputs:
   WebEndpoint:
     Description: "API Gateway endpoint URL for Prod stage"
     Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
-  ECRRepositoryUri:
-    Description: "ECR Repository URI"
-    Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${YggdrasilECRRepository}
-  DeploymentBucketName:
-    Description: "S3 Bucket used for deployment artifacts"
-    Value: yggdrasilbuild

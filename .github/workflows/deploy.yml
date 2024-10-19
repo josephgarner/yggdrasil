@@ -34,6 +34,25 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
+      - name: Create ECR repository if it doesn't exist and set lifecycle policy
+        run: |
+          aws ecr describe-repositories --repository-names ${ECR_REPOSITORY} || aws ecr create-repository --repository-name ${ECR_REPOSITORY}
+          aws ecr put-lifecycle-policy --repository-name ${ECR_REPOSITORY} --lifecycle-policy-text '{
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep last 30 images",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 10
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }'
       - name: Build with SAM
         run: |
           sam build --use-container --debug
