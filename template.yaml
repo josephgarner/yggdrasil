@@ -42,7 +42,6 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       PackageType: Image
-      ImageUri: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${YggdrasilECRRepository}:latest
       ImageConfig:
         Command: ["run.sh"]
       Architectures:

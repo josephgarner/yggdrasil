@@ -42,7 +42,8 @@ jobs:
         run: |
           sam package \
             --s3-bucket $S3_BUCKET \
-            --output-template-file packaged.yaml
+            --output-template-file packaged.yaml \
+            --image-repository ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${ECR_REPOSITORY}
 
       - name: Deploy with CloudFormation
         run: |
