@@ -6,35 +6,24 @@ Description: >
 Globals:
   Function:
     Timeout: 30
-    MemorySize: 1024
-    Tracing: Active
 
 Resources:
   YggdrasilFunction:
     Type: AWS::Serverless::Function
     Properties:
+      CodeUri: .
       PackageType: Image
-      ImageUri: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${YggdrasilECRRepository}:latest
-      ImageConfig:
-        Command: ["run.sh"]
       Architectures:
         - x86_64
       Events:
-        HttpApiEvent:
+        HttpEvent:
           Type: HttpApi
-          Properties:
-            PayloadFormatVersion: "2.0"
-      Environment:
-        Variables:
-          NODE_ENV: production
-          PORT: 3000
-          AWS_LWA_ENABLE_COMPRESSION: "true"
     Metadata:
-      Dockerfile: Dockerfile
+      DockerTag: v1
       DockerContext: .
-      DockerTag: latest
+      Dockerfile: Dockerfile
 
 Outputs:
-  WebEndpoint:
-    Description: "API Gateway endpoint URL for Prod stage"
-    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
+  YggdrasilStackUrl:
+    Description: "API Gateway endpoint URL for servering the next app"
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/"
