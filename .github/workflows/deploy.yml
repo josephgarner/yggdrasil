@@ -34,7 +34,6 @@ jobs:
 
       - name: Deploy with SAM
         run: |
-          ECR_REPO=$(aws cloudformation describe-stacks --stack-name yggdrasil --query "Stacks[0].Outputs[?OutputKey=='ECRRepositoryUri'].OutputValue" --output text)
           sam deploy \
               --no-confirm-changeset \
               --no-fail-on-empty-changeset \
@@ -42,4 +41,4 @@ jobs:
               --s3-bucket yggdrasilbuild \
               --capabilities CAPABILITY_IAM \
               --region ${{ secrets.AWS_REGION }} \
-              --image-repository $ECR_REPO
+              --image-repository ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/yggdrasil-images
