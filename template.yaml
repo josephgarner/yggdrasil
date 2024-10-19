@@ -27,7 +27,7 @@ Resources:
           Type: HttpApi
     Metadata:
       DockerTag: v1
-      DockerContext: ./app
+      DockerContext: ./
       Dockerfile: Dockerfile
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
