@@ -9,11 +9,16 @@ Globals:
     MemorySize: 1024
     Tracing: Active
 
+Parameters:
+  ECRRepositoryName:
+    Type: String
+    Description: Name of the ECR repository
+
 Resources:
   YggdrasilECRRepository:
     Type: AWS::ECR::Repository
     Properties:
-      RepositoryName: yggdrasil-images
+      RepositoryName: !Ref ECRRepositoryName
       LifecyclePolicy:
         LifecyclePolicyText: |
           {
@@ -57,17 +62,6 @@ Resources:
       DockerContext: .
       DockerTag: latest
 
-  YggdrasilDeploymentBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: yggdrasilbuild
-      VersioningConfiguration:
-        Status: Enabled
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
-
 Outputs:
   WebEndpoint:
     Description: "API Gateway endpoint URL for Prod stage"
@@ -76,5 +70,5 @@ Outputs:
     Description: "ECR Repository URI"
     Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${YggdrasilECRRepository}
   DeploymentBucketName:
-    Description: "S3 Bucket for deployment artifacts"
-    Value: !Ref YggdrasilDeploymentBucket
+    Description: "S3 Bucket used for deployment artifacts"
+    Value: yggdrasilbuild
