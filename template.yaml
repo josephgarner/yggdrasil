@@ -6,11 +6,8 @@ Description: >
 Globals:
   Function:
     Timeout: 30
+    MemorySize: 1024
     Tracing: Active
-    LoggingConfig:
-      LogFormat: JSON
-  Api:
-    TracingEnabled: true
 
 Resources:
   YggdrasilECRRepository:
@@ -39,44 +36,30 @@ Resources:
   YggdrasilFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Policies:
-        - AmazonS3FullAccess
-        - AWSLambdaExecute
-        - AWSXrayWriteOnlyAccess
-        - ECRPullPolicy:
-            RepositoryName: !Ref YggdrasilECRRepository
-      CodeUri: yggdrasil/
       PackageType: Image
+      ImageConfig:
+        Command: ["run.sh"]
       Architectures:
         - x86_64
       Events:
-        HttpEvent:
+        HttpApiEvent:
           Type: HttpApi
+          Properties:
+            PayloadFormatVersion: "2.0"
+      Environment:
+        Variables:
+          NODE_ENV: production
+          PORT: 3000
+          AWS_LWA_ENABLE_COMPRESSION: "true"
     Metadata:
-      DockerTag: v1
-      DockerContext: ./yggdrasil
       Dockerfile: Dockerfile
-      DockerImageRepository: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${YggdrasilECRRepository}
-
-  ApplicationResourceGroup:
-    Type: AWS::ResourceGroups::Group
-    Properties:
-      Name:
-        Fn::Sub: ApplicationInsights-SAM-${AWS::StackName}
-      ResourceQuery:
-        Type: CLOUDFORMATION_STACK_1_0
-
-  ApplicationInsightsMonitoring:
-    Type: AWS::ApplicationInsights::Application
-    Properties:
-      ResourceGroupName:
-        Ref: ApplicationResourceGroup
-      AutoConfigurationEnabled: true
+      DockerContext: .
+      DockerTag: latest
 
 Outputs:
-  NextAppStackUrl:
-    Description: "API Gateway endpoint URL for serving the next app"
-    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/"
+  WebEndpoint:
+    Description: "API Gateway endpoint URL for Prod stage"
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
   ECRRepositoryUri:
     Description: "ECR Repository URI"
     Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${YggdrasilECRRepository}
