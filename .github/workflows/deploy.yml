@@ -30,4 +30,4 @@ jobs:
 
       - name: SAM Deploy
 
-        run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset --stack-name sam-hello-world --s3-bucket yggdrasilbuild --capabilities CAPABILITY_IAM --region ap-southeast-2
+        run: sam deploy --no-confirm-changeset --resolve-image-repos --no-fail-on-empty-changeset --stack-name yggdrasil --s3-bucket yggdrasilbuild --capabilities CAPABILITY_IAM --region ap-southeast-2
