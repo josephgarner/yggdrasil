@@ -18,7 +18,7 @@ Resources:
     Properties:
       Policies:
         - AmazonS3FullAccess
-      CodeUri: app/
+      CodeUri: src/
       PackageType: Image
       Architectures:
         - x86_64
