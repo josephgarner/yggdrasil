@@ -1,4 +1,4 @@
-name: Build and Deploy SAM Application with ECR
+name: Build, Deploy, and Clean SAM Application with ECR
 
 on:
   push:
@@ -7,10 +7,11 @@ on:
 
 env:
   ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-  ECR_REPOSITORY: yggdrasil-image # Replace with your desired ECR repository name
+  ECR_REPOSITORY: yggdrasil-images
+  KEEP_LAST_N_IMAGES: 5
 
 jobs:
-  build-deploy:
+  build-deploy-clean:
     runs-on: ubuntu-latest
 
     steps:
@@ -32,16 +33,32 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Create ECR repository if it doesn't exist
+      - name: Create ECR repository if it doesn't exist and set lifecycle policy
         run: |
           aws ecr describe-repositories --repository-names ${ECR_REPOSITORY} || aws ecr create-repository --repository-name ${ECR_REPOSITORY}
+          aws ecr put-lifecycle-policy --repository-name ${ECR_REPOSITORY} --lifecycle-policy-text '{
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep last 30 images",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 30
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }'
 
       - name: Build, tag, and push image to Amazon ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./yggdrasil
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
       - name: Build with SAM
@@ -65,3 +82,21 @@ jobs:
             --capabilities CAPABILITY_IAM \
             --region ${{ secrets.AWS_REGION }} \
             --image-repository $ECR_REGISTRY/$ECR_REPOSITORY
+
+      - name: Clean up old ECR images
+        run: |
+          IMAGES_TO_DELETE=$(aws ecr list-images --repository-name ${ECR_REPOSITORY} --query 'imageIds[?type(imageTag)!=`string`].[imageDigest]' --output text)
+          if [ ! -z "$IMAGES_TO_DELETE" ]; then
+            echo "Deleting untagged images: $IMAGES_TO_DELETE"
+            aws ecr batch-delete-image --repository-name ${ECR_REPOSITORY} --image-ids "$IMAGES_TO_DELETE"
+          fi
+
+          IMAGES_TO_KEEP=$(aws ecr list-images --repository-name ${ECR_REPOSITORY} --query 'reverse(sort_by(imageDetails,& imagePushedAt))[:${KEEP_LAST_N_IMAGES}].imageDigest' --output text)
+          ALL_IMAGES=$(aws ecr list-images --repository-name ${ECR_REPOSITORY} --query 'imageDetails[].imageDigest' --output text)
+
+          for digest in $ALL_IMAGES; do
+            if [[ ! $IMAGES_TO_KEEP =~ $digest ]]; then
+              echo "Deleting old image: $digest"
+              aws ecr batch-delete-image --repository-name ${ECR_REPOSITORY} --image-ids imageDigest=$digest
+            fi
+          done
