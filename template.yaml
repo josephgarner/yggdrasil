@@ -18,6 +18,8 @@ Resources:
     Properties:
       Policies:
         - AmazonS3FullAccess
+        - AWSLambdaExecute
+        - AWSXrayWriteOnlyAccess
       CodeUri: src/
       PackageType: Image
       Architectures:
