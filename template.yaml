@@ -9,16 +9,12 @@ Globals:
     MemorySize: 1024
     Tracing: Active
 
-Parameters:
-  ECRRepositoryName:
-    Type: String
-    Description: Name of the ECR repository
-
 Resources:
   YggdrasilFunction:
     Type: AWS::Serverless::Function
     Properties:
       PackageType: Image
+      ImageUri: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${YggdrasilECRRepository}:latest
       ImageConfig:
         Command: ["run.sh"]
       Architectures:
