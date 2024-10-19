@@ -13,6 +13,29 @@ Globals:
     TracingEnabled: true
 
 Resources:
+  YggdrasilECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: yggdrasil-repo
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep last 30 images",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 30
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }
+
   YggdrasilFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -20,6 +43,8 @@ Resources:
         - AmazonS3FullAccess
         - AWSLambdaExecute
         - AWSXrayWriteOnlyAccess
+        - ECRPullPolicy:
+            RepositoryName: !Ref YggdrasilECRRepository
       CodeUri: yggdrasil/
       PackageType: Image
       Architectures:
@@ -31,6 +56,8 @@ Resources:
       DockerTag: v1
       DockerContext: ./yggdrasil
       Dockerfile: Dockerfile
+      DockerImageRepository: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${YggdrasilECRRepository}
+
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
     Properties:
@@ -38,6 +65,7 @@ Resources:
         Fn::Sub: ApplicationInsights-SAM-${AWS::StackName}
       ResourceQuery:
         Type: CLOUDFORMATION_STACK_1_0
+
   ApplicationInsightsMonitoring:
     Type: AWS::ApplicationInsights::Application
     Properties:
@@ -47,5 +75,8 @@ Resources:
 
 Outputs:
   NextAppStackUrl:
-    Description: "API Gateway endpoint URL for servering the next app"
+    Description: "API Gateway endpoint URL for serving the next app"
     Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/"
+  ECRRepositoryUri:
+    Description: "ECR Repository URI"
+    Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${YggdrasilECRRepository}
