@@ -11,6 +11,8 @@ Resources:
   NextAppStackFunction:
     Type: AWS::Serverless::Function
     Properties:
+      Policies:
+        - AmazonS3FullAccess
       CodeUri: app/
       PackageType: Image
       Architectures:

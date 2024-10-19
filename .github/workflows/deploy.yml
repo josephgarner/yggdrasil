@@ -26,8 +26,8 @@ jobs:
       - name: SAM Build
         uses: aws-actions/setup-sam@v2
         with:
-          run: sam build --use-container
+          run: sam build --use-container --output-template-file packaged.yaml
 
       - name: SAM Deploy
 
-        run: sam deploy --no-confirm-changeset --resolve-image-repos --no-fail-on-empty-changeset --stack-name yggdrasil --s3-bucket yggdrasilbuild --capabilities CAPABILITY_IAM --region ap-southeast-2
+        run: sam deploy --template-file packaged.yaml --no-confirm-changeset --resolve-image-repos --no-fail-on-empty-changeset --stack-name yggdrasil --s3-bucket yggdrasilbuild --capabilities CAPABILITY_IAM --region ap-southeast-2
