@@ -37,6 +37,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       PackageType: Image
+      ImageUri: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${YggdrasilECRRepository}:latest
       ImageConfig:
         Command: ["run.sh"]
       Architectures:
@@ -56,6 +57,17 @@ Resources:
       DockerContext: .
       DockerTag: latest
 
+  YggdrasilDeploymentBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: yggdrasilbuild
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
 Outputs:
   WebEndpoint:
     Description: "API Gateway endpoint URL for Prod stage"
@@ -63,3 +75,6 @@ Outputs:
   ECRRepositoryUri:
     Description: "ECR Repository URI"
     Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${YggdrasilECRRepository}
+  DeploymentBucketName:
+    Description: "S3 Bucket for deployment artifacts"
+    Value: !Ref YggdrasilDeploymentBucket
