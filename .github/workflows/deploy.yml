@@ -62,9 +62,7 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
       - name: Build with SAM
-        run: |
-          sam build --use-container \
-            --image-repository $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        run: sam build --use-container
 
       - name: Install npm modules
         run: npm install
